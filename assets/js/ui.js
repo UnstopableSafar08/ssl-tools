@@ -781,10 +781,10 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
 
         const command = `openssl s_client -connect ${domain}:${port} -servername ${domain} -showcerts </dev/null 2>/dev/null`;
 
-        if (window.location.protocol === 'file:') {
+        if (!isLocalSSLHelperHost()) {
             showModal(
                 'Domain SSL Check',
-                `Domain checks need the local helper server. Run ./start.sh, open http://localhost:8080, then check the domain again. Static fallback command: ${command}`
+                `Live domain checks require the local helper server and are not available on static hosts like GitHub Pages. Run this command locally, then paste the PEM output into the checker: ${command}`
             );
             return;
         }
@@ -809,6 +809,14 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
                 `The local SSL checker endpoint is not available or could not connect: ${error.message}. Static fallback command: ${command}`
             );
         }
+    }
+
+    /**
+     * Only call the SSL helper endpoint on local server hosts.
+     */
+    function isLocalSSLHelperHost() {
+        const hostname = window.location.hostname;
+        return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
     }
 
     /**
