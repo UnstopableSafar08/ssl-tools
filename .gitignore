@@ -1,0 +1,32 @@
+node_modules/
+.DS_Store
+*.log
+.env
+dist/
+build/
+to-do.sh
+.claude/
+.codex/
+.vscode/
+.idea/
+
+# Generated certificate/key artifacts
+*.key
+*.crt
+*.cer
+*.csr
+*.pem
+*.der
+*.p12
+*.pfx
+*.ca-bundle
+*.srl
+
+# Generated downloads/bundles
+*.zip
+password.txt
+README.txt
+
+
+CLAUDE.md
+start.sh
