@@ -835,18 +835,36 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
                 }
                 return;
             } catch (error) {
-                showModal(
-                    'Domain SSL Check',
-                    `The local SSL checker endpoint is not available or could not connect: ${error.message}. Static fallback command: ${command}`
-                );
+                console.log('Local helper server check failed:', error.message);
+            }
+        }
+
+        // Try Netlify function (works when deployed to Netlify)
+        try {
+            const netlifyResponse = await fetch('/.netlify/functions/ssl-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain, port })
+            });
+
+            if (netlifyResponse.ok) {
+                const result = await netlifyResponse.json();
+                document.getElementById('ssl-pem-content').value = result.pem;
+                if (result.certificates && result.certificates.length > 0) {
+                    renderParsedSSLDetails(result.certificates);
+                } else {
+                    parseAndDisplaySSLCertificates(result.pem);
+                }
                 return;
             }
+        } catch (e) {
+            console.log('Netlify function not available:', e.message);
         }
 
         // No API available - show helpful modal with copy button
         showModal(
             'Domain SSL Check',
-            `Live domain checks require a server. Run this command locally, then paste the PEM output below:\n\n${command}`
+            `Live domain checks require a server-side helper.\n\nThis feature works on:\n• Netlify (auto-detected when deployed)\n• Locally with \`node assets/js/server.js\`\n\nOn GitHub Pages, run this command locally and paste the PEM output:\n\n${command}`
         );
 
         // Auto-select the text for easy copying

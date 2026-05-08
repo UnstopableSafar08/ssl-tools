@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/*": {
+      "node_bundler": "esbuild"
+    }
+  }
+}
