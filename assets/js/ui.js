@@ -693,6 +693,27 @@ const UI = (function() {
     }
 
     /**
+     * Show info message temporarily
+     */
+    function showInfo(message) {
+        const existing = document.querySelector('.info-message');
+        if (existing) existing.remove();
+
+        const div = document.createElement('div');
+        div.className = 'info-message';
+        div.textContent = message;
+        document.querySelector('.container').prepend(div);
+        return div;
+    }
+
+    /**
+     * Hide info message
+     */
+    function hideMessage(el) {
+        if (el && el.parentNode) el.remove();
+    }
+
+    /**
      * Setup SSL certificate checker
      */
     function setupSSLChecker() {
@@ -781,34 +802,106 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
 
         const command = `openssl s_client -connect ${domain}:${port} -servername ${domain} -showcerts </dev/null 2>/dev/null`;
 
-        if (!isLocalSSLHelperHost()) {
-            showModal(
-                'Domain SSL Check',
-                `Live domain checks require the local helper server and are not available on static hosts like GitHub Pages. Run this command locally, then paste the PEM output into the checker: ${command}`
-            );
-            return;
-        }
-
+        // Try SSL Labs API first (works on static hosts)
         try {
-            const response = await fetch(`/api/ssl-check?domain=${encodeURIComponent(domain)}&port=${encodeURIComponent(port)}`);
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Unable to fetch certificate');
-            }
-
-            document.getElementById('ssl-pem-content').value = result.pem;
-            if (result.certificates && result.certificates.length > 0) {
-                renderParsedSSLDetails(result.certificates);
-            } else {
-                parseAndDisplaySSLCertificates(result.pem);
-            }
-        } catch (error) {
-            showModal(
-                'Domain SSL Check',
-                `The local SSL checker endpoint is not available or could not connect: ${error.message}. Static fallback command: ${command}`
+            const sslLabsResponse = await fetch(
+                `https://api.ssllabs.com/api/v4/analyze?host=${encodeURIComponent(domain)}&port=${port}&startNew=on&all=done`
             );
+
+            if (sslLabsResponse.ok) {
+                const data = await sslLabsResponse.json();
+                await pollSSLabsResults(domain, port, command);
+                return;
+            }
+        } catch (e) {
+            console.log('SSL Labs not available, trying helper server...');
         }
+
+        // Fallback to local helper if available
+        if (isLocalSSLHelperHost()) {
+            try {
+                const response = await fetch(`/api/ssl-check?domain=${encodeURIComponent(domain)}&port=${encodeURIComponent(port)}`);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Unable to fetch certificate');
+                }
+
+                document.getElementById('ssl-pem-content').value = result.pem;
+                if (result.certificates && result.certificates.length > 0) {
+                    renderParsedSSLDetails(result.certificates);
+                } else {
+                    parseAndDisplaySSLCertificates(result.pem);
+                }
+                return;
+            } catch (error) {
+                showModal(
+                    'Domain SSL Check',
+                    `The local SSL checker endpoint is not available or could not connect: ${error.message}. Static fallback command: ${command}`
+                );
+                return;
+            }
+        }
+
+        // No API available - show helpful modal with copy button
+        showModal(
+            'Domain SSL Check',
+            `Live domain checks require a server. Run this command locally, then paste the PEM output below:\n\n${command}`
+        );
+
+        // Auto-select the text for easy copying
+        setTimeout(() => {
+            const messageEl = document.getElementById('modal-message');
+            if (messageEl) {
+                messageEl.style.userSelect = 'all';
+                messageEl.style.cursor = 'text';
+            }
+        }, 100);
+    }
+
+    /**
+     * Poll SSL Labs API for results
+     */
+    async function pollSSLabsResults(domain, port, command, maxAttempts = 20) {
+        const statusDiv = showInfo('Checking SSL Labs... (this may take 10-20 seconds)');
+
+        for (let i = 0; i < maxAttempts; i++) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            try {
+                const response = await fetch(
+                    `https://api.ssllabs.com/api/v4/analyze?host=${encodeURIComponent(domain)}&port=${port}&startNew=off&all=done`
+                );
+                const data = await response.json();
+
+                if (data.status === 'READY' || data.status === 'ERROR') {
+                    hideMessage(statusDiv);
+
+                    if (data.status === 'ERROR' || !data.endpoints || data.endpoints.length === 0) {
+                        showError('SSL check failed. Try again or use the OpenSSL command below.');
+                        return;
+                    }
+
+                    const endpoint = data.endpoints[0];
+                    const cert = data.certs ? data.certs[0] : null;
+
+                    if (cert && cert.derBase64) {
+                        // Convert DER base64 to PEM
+                        const pem = `-----BEGIN CERTIFICATE-----\n${cert.derBase64.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
+                        document.getElementById('ssl-pem-content').value = pem;
+                        parseAndDisplaySSLCertificates(pem);
+                    } else {
+                        showError('Could not extract certificate from SSL Labs. Use the OpenSSL command below.');
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.log('Polling error:', e);
+            }
+        }
+
+        hideMessage(statusDiv);
+        showError('SSL Labs check timed out. Please use the OpenSSL command below.');
     }
 
     /**
