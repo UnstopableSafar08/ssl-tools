@@ -116,9 +116,25 @@ function isValidHostname(hostname) {
 }
 
 export default async function handler(req) {
-    const url = new URL(req.url);
-    const domain = (url.searchParams.get('domain') || '').trim();
-    const tlsPort = Number(url.searchParams.get('port') || 443);
+    if (req.method !== 'GET' && req.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+            status: 405,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    let domain, port;
+
+    if (req.method === 'GET') {
+        domain = req.nextUrl.searchParams.get('domain') || '';
+        port = Number(req.nextUrl.searchParams.get('port') || 443);
+    } else {
+        const body = await req.json();
+        domain = body.domain || '';
+        port = Number(body.port || 443);
+    }
+
+    domain = domain.trim();
 
     if (!isValidHostname(domain)) {
         return new Response(JSON.stringify({ error: 'Enter a valid domain name' }), {
@@ -127,7 +143,7 @@ export default async function handler(req) {
         });
     }
 
-    if (!Number.isInteger(tlsPort) || tlsPort < 1 || tlsPort > 65535) {
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
         return new Response(JSON.stringify({ error: 'Port number must be between 1 and 65535' }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
@@ -135,7 +151,7 @@ export default async function handler(req) {
     }
 
     try {
-        const pem = await lookupCertificate(domain, tlsPort);
+        const pem = await lookupCertificate(domain, port);
         const certificates = pem
             .match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g)
             .map(parseCertificateDetails);

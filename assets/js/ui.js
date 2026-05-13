@@ -839,16 +839,16 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
             }
         }
 
-        // Try Netlify function (works when deployed to Netlify)
+        // Try Vercel function (works when deployed to Vercel)
         try {
-            const netlifyResponse = await fetch('/.netlify/functions/ssl-check', {
+            const vercelResponse = await fetch('/api/ssl-check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ domain, port })
             });
 
-            if (netlifyResponse.ok) {
-                const result = await netlifyResponse.json();
+            if (vercelResponse.ok) {
+                const result = await vercelResponse.json();
                 document.getElementById('ssl-pem-content').value = result.pem;
                 if (result.certificates && result.certificates.length > 0) {
                     renderParsedSSLDetails(result.certificates);
@@ -858,13 +858,13 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
                 return;
             }
         } catch (e) {
-            console.log('Netlify function not available:', e.message);
+            console.log('Vercel function not available:', e.message);
         }
 
         // No API available - show helpful modal with copy button
         showModal(
             'Domain SSL Check',
-            `Live domain checks require a server-side helper.\n\nThis feature works on:\n• Netlify (auto-detected when deployed)\n• Locally with \`node assets/js/server.js\`\n\nOn GitHub Pages, run this command locally and paste the PEM output:\n\n${command}`
+            `Live domain checks require a server-side helper.\n\nThis feature works on:\n• Vercel (auto-detected when deployed)\n• Locally with \`node assets/js/server.js\`\n\nOn static hosts, run this command locally and paste the PEM output:\n\n${command}`
         );
 
         // Auto-select the text for easy copying
