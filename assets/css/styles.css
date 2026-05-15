@@ -1566,3 +1566,295 @@ form {
         padding: 0.625rem 1rem;
     }
 }
+
+/* CA Generator Section within Certificate Generator */
+.ca-generator-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.ca-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.ca-section-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text);
+}
+
+.ca-form-container {
+    transition: all 0.3s ease;
+}
+
+.ca-form-container.hidden {
+    display: none;
+}
+
+/* Inline submit messages */
+.submit-message {
+    display: inline-block;
+    margin-left: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+/* Certificate Mode Selector */
+.cert-mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.cert-mode-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.cert-mode-option:hover {
+    background: var(--bg);
+}
+
+.cert-mode-option input[type="radio"] {
+    display: none;
+}
+
+.cert-mode-option .mode-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--secondary);
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.cert-mode-option input[type="radio"]:checked + .mode-indicator {
+    border-color: var(--primary);
+}
+
+.cert-mode-option input[type="radio"]:checked + .mode-indicator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.cert-mode-cert:has(input:checked) {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.cert-mode-csr:has(input:checked) {
+    border-color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.mode-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.mode-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.mode-desc {
+    font-size: 0.8rem;
+    color: var(--secondary);
+}
+
+.cert-mode-cert .mode-title {
+    color: var(--primary);
+}
+
+.cert-mode-csr .mode-title {
+    color: var(--success);
+}
+
+.mode-divider {
+    color: var(--secondary);
+    font-size: 1.2rem;
+    padding: 0 0.5rem;
+}
+
+.submit-message.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.submit-message.error {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+/* Warning button for error action */
+.btn-warning {
+    background: var(--warning);
+    color: #000;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-warning:hover {
+    background: #e68a00;
+}
+
+/* PKI Tools Dropdown */
+.pki-tools-dropdown {
+    position: relative;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
+.pki-tools-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 220px;
+}
+
+.pki-tools-menu.hidden {
+    display: none;
+}
+
+.pki-tools-option {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text);
+}
+
+.pki-tools-option:hover {
+    background: var(--bg);
+}
+
+.pki-tools-option:first-child {
+    border-radius: 6px 6px 0 0;
+}
+
+.pki-tools-option:last-child {
+    border-radius: 0 0 6px 6px;
+}
+
+/* Base64 Tools Enhanced UI */
+.base64-mode-selector {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.base64-mode-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.base64-mode-option:hover {
+    background: var(--surface);
+}
+
+.base64-mode-option input[type="radio"] {
+    accent-color: var(--primary);
+    width: 16px;
+    height: 16px;
+}
+
+.base64-mode-option .mode-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.base64-actions {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.base64-actions .btn {
+    min-width: 140px;
+    padding: 0.75rem 2rem;
+}
+
+#pki-base64-section .pki-crypto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#pki-base64-section .pki-crypto-panel h4 {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+#pki-base64-section .textarea-with-action {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+#pki-base64-section .textarea-with-action .btn {
+    align-self: flex-end;
+    min-width: 80px;
+}

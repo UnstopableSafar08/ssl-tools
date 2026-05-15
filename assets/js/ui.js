@@ -6,7 +6,7 @@ const UI = (function() {
     'use strict';
 
     // State
-    let currentTab = 'ca';
+    let currentTab = 'pki';
     let generatedCA = null;
     let generatedCert = null;
     let generatedPKIKeyPairs = [];
@@ -22,6 +22,11 @@ const UI = (function() {
         // setupLocalStorageExpiry();
         clearAppLocalStorage();
         setupTabs();
+        // Set initial active tab based on HTML
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab) {
+            switchTab(activeTab.dataset.tab);
+        }
         setupCAForm();
         setupCertForm();
         setupEmailForm();
@@ -32,6 +37,7 @@ const UI = (function() {
         setupValidityInputs();
         setupPKIForm();
         setupPKICrypto();
+        setupPKIBase64Tools();
         setupNextButtons();
         setupThemeToggle();
         setupGoToTop();
@@ -364,11 +370,52 @@ const UI = (function() {
      * Setup CA form
      */
     function setupCAForm() {
+        // Toggle CA section show/hide
+        const toggleBtn = document.getElementById('toggle-ca-section');
+        const caFormContainer = document.getElementById('ca-form-container');
+
+        if (toggleBtn && caFormContainer) {
+            toggleBtn.addEventListener('click', () => {
+                const isHidden = caFormContainer.classList.contains('hidden');
+                caFormContainer.classList.toggle('hidden');
+                // Update icon and text
+                const icon = toggleBtn.querySelector('.toggle-icon');
+                const text = toggleBtn.querySelector('.toggle-text');
+                if (isHidden) {
+                    if (icon) icon.textContent = '▼';
+                    if (text) text.textContent = 'Hide';
+                } else {
+                    if (icon) icon.textContent = '▶';
+                    if (text) text.textContent = 'Show';
+                }
+            });
+        }
+
+        // CA form submission
         const form = document.getElementById('ca-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             await handleCAGeneration();
+            // Auto-fill certificate form with CA values
+            autoFillCertFromCA();
         });
+    }
+
+    /**
+     * Auto-fill certificate form with CA form values
+     */
+    function autoFillCertFromCA() {
+        const caFields = ['ca-org', 'ca-org-unit', 'ca-country', 'ca-state', 'ca-email', 'ca-validity', 'ca-algorithm'];
+        const certFields = ['cert-org', 'cert-org-unit', 'cert-country', 'cert-state', 'cert-email', 'cert-validity', 'cert-algorithm'];
+
+        caFields.forEach((caField, index) => {
+            const caInput = document.getElementById(caField);
+            const certInput = document.getElementById(certFields[index]);
+            if (caInput && certInput && caInput.value) {
+                certInput.value = caInput.value;
+            }
+        });
+        showSuccess('CA fields auto-filled in Certificate form');
     }
 
     /**
@@ -681,15 +728,126 @@ const UI = (function() {
     /**
      * Show error message
      */
-    function showError(message) {
-        showModal('Error', message);
+    function showError(message, targetFormId = null) {
+        // Show inline error message next to submit buttons
+        const msgs = document.querySelectorAll('.submit-message.error, .submit-message.success');
+        msgs.forEach(m => m.remove());
+
+        const msg = document.createElement('span');
+        msg.className = 'submit-message error';
+        msg.textContent = message;
+
+        // If targetFormId is provided, only show message after that form's submit button
+        if (targetFormId) {
+            const form = document.getElementById(targetFormId);
+            if (form) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.insertAdjacentElement('afterend', msg);
+                    setTimeout(() => msg.remove(), 5000);
+                    return;
+                }
+            }
+        }
+
+        // Default: find all submit buttons and add message after them
+        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+            btn.insertAdjacentElement('afterend', msg.cloneNode(true));
+        });
+
+        const firstMsg = document.querySelector('.submit-message.error');
+        if (firstMsg) {
+            setTimeout(() => firstMsg.remove(), 5000);
+        }
+    }
+
+    /**
+     * Show error message with action button
+     */
+    function showErrorWithAction(message, buttonText, actionCallback, targetFormId = null) {
+        // Remove existing messages
+        const msgs = document.querySelectorAll('.submit-message.error, .submit-message.success');
+        msgs.forEach(m => m.remove());
+
+        // Create error message container
+        const container = document.createElement('div');
+        container.className = 'submit-message error with-action';
+        container.style.display = 'inline-flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '0.5rem';
+        container.style.flexWrap = 'wrap';
+
+        // Create message text
+        const msgText = document.createElement('span');
+        msgText.textContent = message;
+
+        // Create action button
+        const actionBtn = document.createElement('button');
+        actionBtn.type = 'button';
+        actionBtn.className = 'btn btn-warning btn-sm';
+        actionBtn.style.marginLeft = '0.5rem';
+        actionBtn.textContent = buttonText;
+        actionBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actionCallback();
+            container.remove();
+        });
+
+        container.appendChild(msgText);
+        container.appendChild(actionBtn);
+
+        // If targetFormId is provided, only show message after that form's submit button
+        if (targetFormId) {
+            const form = document.getElementById(targetFormId);
+            if (form) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.insertAdjacentElement('afterend', container);
+                    return;
+                }
+            }
+        }
+
+        // Default: find all submit buttons and add message after them
+        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+            btn.insertAdjacentElement('afterend', container.cloneNode(true));
+        });
     }
 
     /**
      * Show success message
      */
-    function showSuccess(message) {
-        showModal('Success', message);
+    function showSuccess(message, targetFormId = null) {
+        // Show inline success message next to submit buttons
+        const msgs = document.querySelectorAll('.submit-message.error, .submit-message.success');
+        msgs.forEach(m => m.remove());
+
+        const msg = document.createElement('span');
+        msg.className = 'submit-message success';
+        msg.textContent = message;
+
+        // If targetFormId is provided, only show message after that form's submit button
+        if (targetFormId) {
+            const form = document.getElementById(targetFormId);
+            if (form) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.insertAdjacentElement('afterend', msg);
+                    setTimeout(() => msg.remove(), 5000);
+                    return;
+                }
+            }
+        }
+
+        // Default: find all submit buttons and add message after them
+        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+            btn.insertAdjacentElement('afterend', msg.cloneNode(true));
+        });
+
+        const firstMsg = document.querySelector('.submit-message.success');
+        if (firstMsg) {
+            setTimeout(() => firstMsg.remove(), 5000);
+        }
     }
 
     /**
@@ -1268,7 +1426,7 @@ openssl req -new -x509 -key ca.key -sha256 -days ${validity * 365} -out ca.crt \
   -addext "keyUsage=critical,keyCertSign,cRLSign"`;
             document.getElementById('ca-openssl').textContent = opensslCommands;
 
-            showSuccess('CA Certificate generated successfully!');
+            showSuccess('CA Certificate generated successfully!', 'ca-form');
             updateDevOpsSection();
 
             // Scroll to output section
@@ -1342,6 +1500,34 @@ openssl req -new -x509 -key ca.key -sha256 -days ${validity * 365} -out ca.crt \
                 return;
             }
 
+            // Check if CA is generated (only for certificate mode, not for CSR-only)
+            if (!generatedCA) {
+                showErrorWithAction(
+                    'Failed to generate certificate: CA key pair not found. Generate a CA first.',
+                    'Go To CA Section',
+                    () => {
+                        // Show and navigate to CA section
+                        const caContainer = document.getElementById('ca-form-container');
+                        const toggleBtn = document.getElementById('toggle-ca-section');
+                        if (caContainer) {
+                            caContainer.classList.remove('hidden');
+                            caContainer.style.display = 'block';
+                        }
+                        if (toggleBtn) {
+                            const icon = toggleBtn.querySelector('.toggle-icon');
+                            const text = toggleBtn.querySelector('.toggle-text');
+                            if (icon) icon.textContent = '▼';
+                            if (text) text.textContent = 'Hide';
+                        }
+                        // Scroll to CA section
+                        const caSection = document.querySelector('.ca-generator-section');
+                        if (caSection) caSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    },
+                    'cert-form'
+                );
+                return;
+            }
+
             // Handle certificate generation (existing logic)
             const result = await Cert.generateCertificate(
                 domain, org, country, validity, algorithm, sanEntries, false, state, '', orgUnit, email
@@ -1383,7 +1569,7 @@ openssl x509 -req -in ${domain}.csr -CA ca.crt -CAkey ca.key \\
   -sha256 -extfile <(printf "subjectAltName=${sanStr}")`;
             document.getElementById('cert-openssl').textContent = opensslCommands;
 
-            showSuccess('Certificate generated successfully!');
+            showSuccess('Certificate generated successfully!', 'cert-form');
             updateDevOpsSection();
 
             // Scroll to output section
@@ -1696,8 +1882,12 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
                     algorithm: algorithm,
                     curve: algorithm === 'ECDSA' ? curve : 'N/A',
                     formats: {
-                        pem: { key: pemKey, pub: pemPub },
-                        pkcs8: { key: pkcs8Key, pub: pemPub },
+                        pem: { key: pemKey || '', pub: pemPub || '' },
+                        pkcs8: { key: (pkcs8Key || pemKey || ''), pub: pemPub || '' },
+                        base64: {
+                            key: (pkcs8Key || pemKey) ? pkcs8ToBase64(pkcs8Key || pemKey) : '',
+                            pub: pemPub ? pkcs8ToBase64(pemPub) : ''
+                        },
                         pkcs12: pkcs12Bundle
                     },
                     pkcs12Password,
@@ -1720,7 +1910,7 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
             // Display OpenSSL commands
             document.getElementById('pki-openssl').textContent = opensslCommands;
 
-            showSuccess('Key pairs generated successfully!');
+            showSuccess('Key pairs generated successfully!', 'pki-form');
 
             // Scroll to output section
             output.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1835,6 +2025,170 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
         copyDecryptBtn.addEventListener('click', async () => {
             await copyTextareaValue('pki-decrypt-output', copyDecryptBtn);
         });
+    }
+
+    /**
+     * Convert PKCS8 PEM key to base64 format (same as: sed '/-----/d' key.pem | tr -d '\n' | base64 -w 0)
+     */
+    function pkcs8ToBase64(pemKey) {
+        try {
+            if (!pemKey || typeof pemKey !== 'string') {
+                console.error('Invalid PEM key input:', pemKey);
+                return '';
+            }
+            // Check if already base64 (no PEM headers)
+            if (!pemKey.includes('-----BEGIN')) {
+                return pemKey.replace(/\s/g, '');
+            }
+            // Remove PEM headers, dividers, and all whitespace/newlines
+            const result = pemKey
+                .replace(/-----BEGIN[^-]+-----/g, '')
+                .replace(/-----END[^-]+-----/g, '')
+                .replace(/[\n\r\t\s]/g, '');
+            return result;
+        } catch (error) {
+            console.error('Error converting to base64:', error);
+            return '';
+        }
+    }
+
+    /**
+     * Convert base64 string back to PKCS8 PEM format
+     * Uses -----BEGIN PRIVATE KEY----- header (PKCS8 format)
+     */
+    function base64ToPemKey(base64Str, isPrivate = true) {
+        try {
+            if (!base64Str || typeof base64Str !== 'string') {
+                return 'Error: Invalid base64 input';
+            }
+            // Remove all whitespace
+            const clean = base64Str.replace(/[\s\n\r]/g, '');
+            // Validate base64 characters
+            if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean)) {
+                return 'Error: Invalid base64 characters';
+            }
+            // Format with line breaks (64 chars per line)
+            const formatted = clean.match(/.{1,64}/g)?.join('\n') || clean;
+            // Use PKCS8 format (-----BEGIN PRIVATE KEY-----)
+            if (isPrivate) {
+                return `-----BEGIN PRIVATE KEY-----\n${formatted}\n-----END PRIVATE KEY-----`;
+            }
+            return `-----BEGIN PUBLIC KEY-----\n${formatted}\n-----END PUBLIC KEY-----`;
+        } catch (error) {
+            return `Error: ${error.message}`;
+        }
+    }
+
+    /**
+     * Setup Base64 Tools for RSA keys
+     */
+    function setupPKIBase64Tools() {
+        const toggleBtn = document.getElementById('toggle-pki-base64-tools');
+        const section = document.getElementById('pki-base64-section');
+        const input = document.getElementById('pki-base64-input');
+        const inputLabel = document.getElementById('pki-base64-input-label');
+        const output = document.getElementById('pki-base64-output');
+        const outputLabel = document.getElementById('pki-base64-output-label');
+        const processBtn = document.getElementById('pki-base64-process-btn');
+        const copyBtn = document.getElementById('pki-copy-base64-output');
+        const fileInput = document.getElementById('pki-base64-file');
+        const opensslPreview = document.getElementById('pki-base64-openssl');
+
+        let currentMode = 'encode';
+
+        // Toggle section
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = section.classList.contains('hidden');
+            section.classList.toggle('hidden');
+            toggleBtn.textContent = isHidden ? 'Hide Base64 Tools' : 'Show Base64 Tools';
+
+            if (isHidden) {
+                currentMode = 'encode';
+                document.querySelector('input[name="pki-base64-mode"][value="encode"]').checked = true;
+                updateBase64UI('encode');
+                input.value = '';
+                output.value = '';
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+
+        function updateBase64UI(mode) {
+            if (mode === 'encode') {
+                input.placeholder = '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----';
+                inputLabel.textContent = 'Enter PKCS8 Key (PEM)';
+                outputLabel.textContent = 'Base64 Output';
+                output.placeholder = 'Base64 encoded key will appear here...';
+                opensslPreview.textContent = `# Convert/Encode the PKCS8 private key into a base64 format
+# Example with private key file:
+sed '/-----/d' private_key_pkcs8.pem | tr -d '\\n' | base64 -w 0 > enc_key_pair_private_base64`;
+            } else {
+                input.placeholder = 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD...';
+                inputLabel.textContent = 'Enter Base64 String';
+                outputLabel.textContent = 'PKCS8 Key (PEM) Output';
+                output.placeholder = 'Decoded PKCS8 key will appear here...';
+                opensslPreview.textContent = `# Decode/Convert base64 to PKCS8 private key format
+# Example with base64 file:
+cat encoded_base64_key | base64 -d > private_key_pkcs8.pem`;
+            }
+        }
+
+        // Handle file upload
+        fileInput.addEventListener('change', async () => {
+            await loadKeyFileIntoTextarea(fileInput, 'pki-base64-input');
+        });
+
+        // Handle mode switch
+        document.querySelectorAll('input[name="pki-base64-mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentMode = e.target.value;
+                input.value = '';
+                output.value = '';
+                updateBase64UI(currentMode);
+            });
+        });
+
+        // Process button
+        processBtn.addEventListener('click', () => {
+            const inputValue = input.value.trim();
+            if (!inputValue) {
+                output.value = 'Please enter a value to process.';
+                return;
+            }
+
+            try {
+                if (currentMode === 'encode') {
+                    // Use PKCS8 to Base64 conversion
+                    const result = pkcs8ToBase64(inputValue);
+                    if (!result) {
+                        output.value = 'Error: Failed to encode. Please check if input is a valid PEM key.';
+                    } else {
+                        output.value = result;
+                    }
+                } else {
+                    // Decode base64 to PEM
+                    const cleanBase64 = inputValue.replace(/\s/g, '');
+                    // Determine if private or public key based on length
+                    // RSA 2048 private key base64 is around 1672 chars, public key is around 400
+                    const isPrivate = cleanBase64.length > 500;
+                    const result = base64ToPemKey(cleanBase64, isPrivate);
+                    output.value = result;
+                }
+            } catch (error) {
+                output.value = `Error: ${error.message}`;
+            }
+        });
+
+        // Copy button
+        copyBtn.addEventListener('click', async () => {
+            await copyTextareaValue('pki-base64-output', copyBtn);
+        });
+    }
+
+    /**
+     * Format base64 string with line breaks
+     */
+    function formatBase64(str) {
+        return str.match(/.{1,64}/g)?.join('\n') || str;
     }
 
     /**
@@ -2055,6 +2409,7 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
                             <span>Private</span>
                             <button class="btn btn-secondary btn-sm" data-action="open-pki-pem-key" data-index="${index}" title="Open Private PEM">PEM</button>
                             <button class="btn btn-secondary btn-sm" data-action="open-pki-pkcs8-key" data-index="${index}" title="Open Private PKCS8">PKCS8</button>
+                            <button class="btn btn-secondary btn-sm" data-action="open-pki-base64-key" data-index="${index}" title="Open Private Base64">BASE64</button>
                         </div>
                         <div class="pki-action-row">
                             <span>PKCS12</span>
@@ -2101,6 +2456,17 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
                 break;
             case 'open-pki-pkcs8-key':
                 showPKIArtifactModal('Private Key (PKCS8)', keyPair.formats.pkcs8.key, `${keyPair.name}_private_pkcs8.pem`);
+                break;
+            // Base64 format artifacts
+            case 'open-pki-base64-key':
+                // Try to get base64 from formats, fallback to generating from pkcs8 or pem
+                let base64Key = keyPair.formats?.base64?.key || '';
+                if (!base64Key && keyPair.formats?.pkcs8?.key) {
+                    base64Key = pkcs8ToBase64(keyPair.formats.pkcs8.key);
+                } else if (!base64Key && keyPair.pemKey) {
+                    base64Key = pkcs8ToBase64(keyPair.pemKey);
+                }
+                showPKIArtifactModal('Private Key (Base64)', base64Key, `${keyPair.name}_private_base64.txt`);
                 break;
             // PKCS12 format artifact
             case 'open-pki-pkcs12':

@@ -31,57 +31,31 @@
         </header>
 
         <nav class="tabs">
-            <button class="tab active" data-tab="ca">CA Generator</button>
+            <button class="tab active" data-tab="pki">RSA/PKI Key Pairs</button>
             <button class="tab" data-tab="cert">Certificate Generator</button>
             <button class="tab" data-tab="devops">DevOps Export</button>
             <button class="tab" data-tab="ssl-checker-tab">SSL Checker</button>
-            <button class="tab" data-tab="pki">RSA/PKI Key Pairs</button>
             <button class="tab" data-tab="cli">CLI Commands</button>
         </nav>
 
         <main>
-            <!-- CA Generator Section -->
-            <section id="ca-section" class="tab-content active">
-                <h2>Generate Root Certificate Authority</h2>
-                <form id="ca-form">
+            <section id="pki-section" class="tab-content active">
+                <h2>PKI Key Pairs Generator</h2>
+                <p class="pki-intro">Generate public/private key pairs without creating certificates. Useful for
+                    testing, development, or when you need raw keys for custom certificate workflows.</p>
+
+                <form id="pki-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="ca-name">CA Common Name (CN) <span class="required">*</span></label>
-                            <input type="text" id="ca-name" name="ca-name" placeholder="MY Root CA" required>
+                            <label for="pki-name">Key Pair Name <span class="required">*</span></label>
+                            <input type="text" id="pki-name" name="pki-name" placeholder="pki_key_pair" required>
                         </div>
                         <div class="form-group">
-                            <label for="ca-org">Organization (O) <span class="optional">(optional)</span></label>
-                            <input type="text" id="ca-org" name="ca-org" placeholder="Sagar IT Solutions">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="ca-org-unit">Organizational Unit (OU) <span
-                                    class="optional">(optional)</span></label>
-                            <input type="text" id="ca-org-unit" name="ca-org-unit" placeholder="IT Department">
-                        </div>
-                        <div class="form-group">
-                            <label for="ca-country">Country (C) <span class="optional">(optional)</span></label>
-                            <input type="text" id="ca-country" name="ca-country" placeholder="NP" maxlength="2">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="ca-state">State/Province (ST) <span class="optional">(optional)</span></label>
-                            <input type="text" id="ca-state" name="ca-state" placeholder="Bagmati">
-                        </div>
-                        <div class="form-group">
-                            <label for="ca-email">Email Address <span class="optional">(optional)</span></label>
-                            <input type="email" id="ca-email" name="ca-email" placeholder="admin@sagarmalla.info.np">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="ca-validity">Validity Period (years) <span class="required">*</span></label>
-                            <select id="ca-validity" name="ca-validity" required>
-                                <option value="1">1</option>
+                            <label for="pki-count">No of Key Pairs <span class="required">*</span></label>
+                            <select id="pki-count" name="pki-count" required>
+                                <option value="1" selected>1</option>
                                 <option value="2">2</option>
-                                <option value="3" selected>3</option>
+                                <option value="3">3</option>
                                 <option value="4">4</option>
                                 <option value="5">5</option>
                                 <option value="6">6</option>
@@ -90,60 +64,333 @@
                                 <option value="9">9</option>
                                 <option value="10">10</option>
                             </select>
-                            <small class="validity-warning hidden">Warning: Validity > 825 days may have browser
-                                compatibility issues</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pki-size">Key Pair Size <span class="required">*</span></label>
+                            <select id="pki-size" name="pki-size" required>
+                                <option value="1024">1024</option>
+                                <option value="2048" selected>2048</option>
+                                <option value="3072">3072</option>
+                                <option value="4096">4096</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label for="ca-algorithm">Key Algorithm <span class="required">*</span></label>
-                            <select id="ca-algorithm" name="ca-algorithm">
-                                <option value="RSA-2048" selected>RSA 2048</option>
-                                <option value="RSA-4096">RSA 4096</option>
-                                <option value="ECDSA-P256">ECDSA P-256</option>
-                                <option value="ECDSA-P384">ECDSA P-384</option>
+                            <label for="pki-algorithm">Key Pair Algorithm <span class="required">*</span></label>
+                            <select id="pki-algorithm" name="pki-algorithm" required>
+                                <option value="RSA" selected>RSA</option>
+                                <option value="ECDSA">ECDSA</option>
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Generate CA</button>
+                    <div class="form-group hidden" id="pki-curve-group">
+                        <label for="pki-curve">Key Pair Curve Name <span class="required">*</span></label>
+                        <select id="pki-curve" name="pki-curve">
+                            <option value="secp256r1" selected>secp256r1</option>
+                            <option value="secp384r1">secp384r1</option>
+                            <option value="secp521r1">secp521r1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pki-pkcs12-password">PKCS12 (.p12) Password</label>
+                        <!-- <small>Leave empty to use the default password: password123</small> -->
+                        <input type="password" id="pki-pkcs12-password" name="pki-pkcs12-password"
+                            placeholder="Default password: password123" style="width: 40%;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Generate Key Pairs</button>
                 </form>
 
-                <div id="ca-output" class="output hidden">
-                    <h3>Generated CA Certificate</h3>
-                    <div class="output-actions">
-                        <button class="btn btn-secondary" data-action="download-ca-key">Download ca.key</button>
-                        <button class="btn btn-secondary" data-action="download-ca-crt">Download ca.crt</button>
-                        <button class="btn btn-secondary" data-action="copy-ca-pem">Copy PEM</button>
-                        <button class="btn btn-primary" id="ca-next-btn">Next: Generate Certificate →</button>
+                <div id="pki-output" class="output hidden">
+                    <h3>Generated Key Pairs</h3>
+                    <div class="pki-table-container">
+                        <table class="pki-table">
+                            <thead>
+                                <tr>
+                                    <th>Key Pair Name</th>
+                                    <th>Key Pair Size</th>
+                                    <th>Key Pair Algorithm</th>
+                                    <th>Key Pair Curve Name</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pki-table-body">
+                                <!-- Generated key pairs will be inserted here -->
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="pem-viewer">
-                        <div class="pem-header">
-                            <span>CA Certificate (PEM)</span>
-                            <button class="btn-toggle" data-target="ca-crt-pem">Show/Hide</button>
-                        </div>
-                        <pre id="ca-crt-pem" class="pem-content hidden"></pre>
+                    <div class="output-actions" style="margin-top: 1.5rem;">
+                        <button class="btn btn-secondary" id="download-pki-zip">Download All as ZIP</button>
                     </div>
                     <div class="openssl-preview">
                         <h4>Equivalent OpenSSL Commands</h4>
-                        <pre id="ca-openssl"></pre>
-                        <button class="btn btn-secondary" data-action="copy-ca-openssl">Copy Commands</button>
+                        <pre id="pki-openssl"></pre>
+                        <button class="btn btn-secondary" data-action="copy-pki-openssl">Copy Commands</button>
+                    </div>
+                </div>
+
+                <div class="pki-crypto-toggle">
+                    <button type="button" class="btn btn-secondary" id="toggle-pki-crypto">Show RSA Text Encrypt/Decrypt</button>
+                    <button type="button" class="btn btn-secondary" id="toggle-pki-base64-tools">Show Base64 Tools</button>
+                </div>
+
+                <div id="pki-base64-section" class="output pki-crypto-section hidden">
+                    <h3 id="pki-base64-title">Base64 Tools</h3>
+                    <p class="pki-intro" id="pki-base64-intro">Encode or decode RSA keys to/from Base64 format.</p>
+
+                    <div class="base64-mode-selector">
+                        <label class="base64-mode-option">
+                            <input type="radio" name="pki-base64-mode" value="encode" checked>
+                            <span class="mode-label">Encode RSA Key to Base64</span>
+                        </label>
+                        <label class="base64-mode-option">
+                            <input type="radio" name="pki-base64-mode" value="decode">
+                            <span class="mode-label">Decode Base64 to RSA Key</span>
+                        </label>
+                    </div>
+
+                    <div class="pki-crypto-grid">
+                        <div class="pki-crypto-panel">
+                            <h4 id="pki-base64-panel-title">Input</h4>
+                            <div class="form-group">
+                                <label for="pki-base64-input" id="pki-base64-input-label">Enter RSA Key</label>
+                                <textarea id="pki-base64-input" rows="8" placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"></textarea>
+                                <input type="file" id="pki-base64-file" accept=".pem,.key,.txt">
+                            </div>
+                        </div>
+                        <div class="pki-crypto-panel">
+                            <h4>Output</h4>
+                            <div class="form-group">
+                                <label for="pki-base64-output" id="pki-base64-output-label">Base64 Output</label>
+                                <div class="textarea-with-action">
+                                    <textarea id="pki-base64-output" rows="8" readonly placeholder="Base64 encoded key will appear here..."></textarea>
+                                    <button type="button" class="btn btn-secondary" id="pki-copy-base64-output">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="base64-actions">
+                        <button type="button" class="btn btn-primary" id="pki-base64-process-btn">Process</button>
+                    </div>
+
+                    <div class="openssl-preview">
+                        <h4>Equivalent OpenSSL Commands</h4>
+                        <pre id="pki-base64-openssl"># Convert/Encode the PKCS8 private key into a base64 format
+# Example with private key file:
+sed '/-----/d' private_key_pkcs8.pem | tr -d '\n' | base64 -w 0 > enc_key_pair_private_base64</pre>
+                        <button class="btn btn-secondary" data-action="copy-pki-base64-openssl">Copy Commands</button>
+                    </div>
+                </div>
+
+                <div id="pki-crypto-section" class="output pki-crypto-section hidden">
+                    <h3>RSA Text Encrypt/Decrypt</h3>
+                    <p class="pki-intro">Encrypt or decrypt text locally with RSA PEM keys. Use generated RSA key pairs
+                        from this tab, paste a key, or upload a key file.</p>
+
+                    <div class="pki-crypto-grid">
+                        <div class="pki-crypto-panel">
+                            <h4>Encryption</h4>
+                            <div class="form-group">
+                                <label for="pki-encrypt-input">Enter Plain Text to Encrypt</label>
+                                <textarea id="pki-encrypt-input" rows="6" placeholder="Text to encrypt"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="pki-encrypt-key">Enter Public/Private key</label>
+                                <textarea id="pki-encrypt-key" rows="7" placeholder="Paste PEM key"></textarea>
+                                <input type="file" id="pki-encrypt-key-file" accept=".pem,.key,.txt">
+                            </div>
+                            <div class="form-group">
+                                <label>RSA Key Type</label>
+                                <div class="radio-row">
+                                    <label>
+                                        <input type="radio" name="pki-encrypt-key-type" value="public" checked>
+                                        Public key
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="pki-encrypt-key-type" value="private">
+                                        Private key
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pki-encrypt-algorithm">Select Encryption Algorithm</label>
+                                <select id="pki-encrypt-algorithm">
+                                    <option value="RSA">RSA (Provider Default - Not Recommended)</option>
+                                    <option value="RSA/ECB/PKCS1Padding">RSA/ECB/PKCS1Padding (Legacy)</option>
+                                    <option value="RSA/ECB/OAEPWithSHA-1AndMGF1Padding">RSA/ECB/OAEPWithSHA-1AndMGF1Padding (Legacy)</option>
+                                    <option value="RSA/ECB/OAEPWithSHA-256AndMGF1Padding" selected>RSA/ECB/OAEPWithSHA-256AndMGF1Padding (Recommended)</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="pki-encrypt-btn">Encrypt</button>
+                            <div class="form-group pki-output-field">
+                                <label for="pki-encrypt-output">Encrypted Output</label>
+                                <div class="textarea-with-action">
+                                    <textarea id="pki-encrypt-output" rows="7" readonly></textarea>
+                                    <button type="button" class="btn btn-secondary" id="pki-copy-encrypt-output">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pki-crypto-panel">
+                            <h4>Decryption</h4>
+                            <div class="form-group">
+                                <label for="pki-decrypt-input">Enter Encrypted Text to Decrypt (Base64)</label>
+                                <textarea id="pki-decrypt-input" rows="6" placeholder="Base64 encrypted text"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="pki-decrypt-key">Enter Public/Private key</label>
+                                <textarea id="pki-decrypt-key" rows="7" placeholder="Paste PEM key"></textarea>
+                                <input type="file" id="pki-decrypt-key-file" accept=".pem,.key,.txt">
+                            </div>
+                            <div class="form-group">
+                                <label>RSA Key Type</label>
+                                <div class="radio-row">
+                                    <label>
+                                        <input type="radio" name="pki-decrypt-key-type" value="public">
+                                        Public key
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="pki-decrypt-key-type" value="private" checked>
+                                        Private key
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pki-decrypt-algorithm">Select Decryption Algorithm</label>
+                                <select id="pki-decrypt-algorithm">
+                                    <option value="RSA">RSA (Provider Default - Not Recommended)</option>
+                                    <option value="RSA/ECB/PKCS1Padding">RSA/ECB/PKCS1Padding (Legacy)</option>
+                                    <option value="RSA/ECB/OAEPWithSHA-1AndMGF1Padding">RSA/ECB/OAEPWithSHA-1AndMGF1Padding (Legacy)</option>
+                                    <option value="RSA/ECB/OAEPWithSHA-256AndMGF1Padding" selected>RSA/ECB/OAEPWithSHA-256AndMGF1Padding (Recommended)</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="pki-decrypt-btn">Decrypt</button>
+                            <div class="form-group pki-output-field">
+                                <label for="pki-decrypt-output">Decrypted Output</label>
+                                <div class="textarea-with-action">
+                                    <textarea id="pki-decrypt-output" rows="7" readonly></textarea>
+                                    <button type="button" class="btn btn-secondary" id="pki-copy-decrypt-output">Copy</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Certificate Generator Section -->
             <section id="cert-section" class="tab-content hidden">
+                <!-- CA Generator Collapsible Section -->
+                <div class="ca-generator-section">
+                    <div class="ca-section-header">
+                        <h3>Root Certificate Authority (CA)</h3>
+                        <button type="button" class="btn btn-secondary" id="toggle-ca-section">
+                        <span class="toggle-icon">▶</span> <span class="toggle-text">Show</span>
+                    </button>
+                    </div>
+                    <div id="ca-form-container" class="ca-form-container hidden">
+                        <form id="ca-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ca-name">CA Common Name (CN) <span class="required">*</span></label>
+                                    <input type="text" id="ca-name" name="ca-name" placeholder="MY Root CA" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ca-org">Organization (O) <span class="optional">(optional)</span></label>
+                                    <input type="text" id="ca-org" name="ca-org" placeholder="Sagar IT Solutions">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ca-org-unit">Organizational Unit (OU) <span class="optional">(optional)</span></label>
+                                    <input type="text" id="ca-org-unit" name="ca-org-unit" placeholder="IT Department">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ca-country">Country (C) <span class="optional">(optional)</span></label>
+                                    <input type="text" id="ca-country" name="ca-country" placeholder="NP" maxlength="2">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ca-state">State/Province (ST) <span class="optional">(optional)</span></label>
+                                    <input type="text" id="ca-state" name="ca-state" placeholder="Bagmati">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ca-email">Email Address <span class="optional">(optional)</span></label>
+                                    <input type="email" id="ca-email" name="ca-email" placeholder="admin@sagarmalla.info.np">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ca-validity">Validity Period (years) <span class="required">*</span></label>
+                                    <select id="ca-validity" name="ca-validity" required>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3" selected>3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                    </select>
+                                    <small class="validity-warning hidden">Warning: Validity > 825 days may have browser compatibility issues</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ca-algorithm">Key Algorithm <span class="required">*</span></label>
+                                    <select id="ca-algorithm" name="ca-algorithm">
+                                        <option value="RSA-2048" selected>RSA 2048</option>
+                                        <option value="RSA-4096">RSA 4096</option>
+                                        <option value="ECDSA-P256">ECDSA P-256</option>
+                                        <option value="ECDSA-P384">ECDSA P-384</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Generate CA</button>
+                        </form>
+
+                        <div id="ca-output" class="output hidden">
+                            <h3>Generated CA Certificate</h3>
+                            <div class="output-actions">
+                                <button class="btn btn-secondary" data-action="download-ca-key">Download ca.key</button>
+                                <button class="btn btn-secondary" data-action="download-ca-crt">Download ca.crt</button>
+                                <button class="btn btn-secondary" data-action="copy-ca-pem">Copy PEM</button>
+                            </div>
+                            <div class="pem-viewer">
+                                <div class="pem-header">
+                                    <span>CA Certificate (PEM)</span>
+                                    <button class="btn-toggle" data-target="ca-crt-pem">Show/Hide</button>
+                                </div>
+                                <pre id="ca-crt-pem" class="pem-content hidden"></pre>
+                            </div>
+                            <div class="openssl-preview">
+                                <h4>Equivalent OpenSSL Commands</h4>
+                                <pre id="ca-openssl"></pre>
+                                <button class="btn btn-secondary" data-action="copy-ca-openssl">Copy Commands</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <h2>Generate Certificate</h2>
                 <form id="cert-form">
-                    <div class="form-group checkbox-group">
-                        <label>
+                    <div class="cert-mode-selector">
+                        <label class="cert-mode-option cert-mode-cert">
                             <input type="radio" name="cert-mode" value="certificate" checked>
-                            Generate Self-Signed Certificate.
+                            <span class="mode-indicator"></span>
+                            <span class="mode-content">
+                                <span class="mode-title">Certificate Mode</span>
+                                <span class="mode-desc">Generate Self-Signed Certificate (Requires CA)</span>
+                            </span>
                         </label>
-                        <!-- </div> -->
-                        <label> <i> | </i> </label>
-                        <!-- <div class="form-group checkbox-group"> -->
-                        <label style="color:#0e9a6c">
+                        <span class="mode-divider">|</span>
+                        <label class="cert-mode-option cert-mode-csr">
                             <input type="radio" name="cert-mode" value="csr-only">
-                            Generate CSR (Certificate Signing Request) Only.
+                            <span class="mode-indicator"></span>
+                            <span class="mode-content">
+                                <span class="mode-title">CSR Mode</span>
+                                <span class="mode-desc">Generate CSR Only (No CA Required)</span>
+                            </span>
                         </label>
                     </div>
                     <div class="form-row">
@@ -268,7 +515,6 @@
                 </div>
             </section>
 
-            <!-- DevOps Export Section -->
             <section id="devops-section" class="tab-content hidden">
                 <h2>DevOps Export Panel</h2>
 
@@ -395,7 +641,6 @@
                 </div>
             </section>
 
-            <!-- SSL Checker Section -->
             <section id="ssl-checker-tab-section" class="tab-content hidden">
                 <h2>SSL Certificate Checker</h2>
                 <p class="cli-intro">Inspect certificate details from PEM content or certificate files. Domain checks
@@ -518,196 +763,6 @@
                 </div>
             </section>
 
-            <!-- PKI Key Pairs Section -->
-            <section id="pki-section" class="tab-content hidden">
-                <h2>PKI Key Pairs Generator</h2>
-                <p class="pki-intro">Generate public/private key pairs without creating certificates. Useful for
-                    testing, development, or when you need raw keys for custom certificate workflows.</p>
-
-                <form id="pki-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="pki-name">Key Pair Name <span class="required">*</span></label>
-                            <input type="text" id="pki-name" name="pki-name" placeholder="pki_key_pair" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="pki-count">No of Key Pairs <span class="required">*</span></label>
-                            <select id="pki-count" name="pki-count" required>
-                                <option value="1" selected>1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="pki-size">Key Pair Size <span class="required">*</span></label>
-                            <select id="pki-size" name="pki-size" required>
-                                <option value="2048" selected>2048</option>
-                                <option value="3072">3072</option>
-                                <option value="4096">4096</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="pki-algorithm">Key Pair Algorithm <span class="required">*</span></label>
-                            <select id="pki-algorithm" name="pki-algorithm" required>
-                                <option value="RSA" selected>RSA</option>
-                                <option value="ECDSA">ECDSA</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group hidden" id="pki-curve-group">
-                        <label for="pki-curve">Key Pair Curve Name <span class="required">*</span></label>
-                        <select id="pki-curve" name="pki-curve">
-                            <option value="secp256r1" selected>secp256r1</option>
-                            <option value="secp384r1">secp384r1</option>
-                            <option value="secp521r1">secp521r1</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="pki-pkcs12-password">PKCS12 (.p12) Password</label>
-                        <!-- <small>Leave empty to use the default password: password123</small> -->
-                        <input type="password" id="pki-pkcs12-password" name="pki-pkcs12-password"
-                            placeholder="Default password: password123" style="width: 40%;">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Generate Key Pairs</button>
-                </form>
-
-                <div id="pki-output" class="output hidden">
-                    <h3>Generated Key Pairs</h3>
-                    <div class="pki-table-container">
-                        <table class="pki-table">
-                            <thead>
-                                <tr>
-                                    <th>Key Pair Name</th>
-                                    <th>Key Pair Size</th>
-                                    <th>Key Pair Algorithm</th>
-                                    <th>Key Pair Curve Name</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pki-table-body">
-                                <!-- Generated key pairs will be inserted here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="output-actions" style="margin-top: 1.5rem;">
-                        <button class="btn btn-secondary" id="download-pki-zip">Download All as ZIP</button>
-                    </div>
-                    <div class="openssl-preview">
-                        <h4>Equivalent OpenSSL Commands</h4>
-                        <pre id="pki-openssl"></pre>
-                        <button class="btn btn-secondary" data-action="copy-pki-openssl">Copy Commands</button>
-                    </div>
-                </div>
-
-                <div class="pki-crypto-toggle">
-                    <button type="button" class="btn btn-secondary" id="toggle-pki-crypto">Show RSA Text Encrypt/Decrypt</button>
-                </div>
-
-                <div id="pki-crypto-section" class="output pki-crypto-section hidden">
-                    <h3>RSA Text Encrypt/Decrypt</h3>
-                    <p class="pki-intro">Encrypt or decrypt text locally with RSA PEM keys. Use generated RSA key pairs
-                        from this tab, paste a key, or upload a key file.</p>
-
-                    <div class="pki-crypto-grid">
-                        <div class="pki-crypto-panel">
-                            <h4>Encryption</h4>
-                            <div class="form-group">
-                                <label for="pki-encrypt-input">Enter Plain Text to Encrypt</label>
-                                <textarea id="pki-encrypt-input" rows="6" placeholder="Text to encrypt"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="pki-encrypt-key">Enter Public/Private key</label>
-                                <textarea id="pki-encrypt-key" rows="7" placeholder="Paste PEM key"></textarea>
-                                <input type="file" id="pki-encrypt-key-file" accept=".pem,.key,.txt">
-                            </div>
-                            <div class="form-group">
-                                <label>RSA Key Type</label>
-                                <div class="radio-row">
-                                    <label>
-                                        <input type="radio" name="pki-encrypt-key-type" value="public" checked>
-                                        Public key
-                                    </label>
-                                    <label>
-                                        <input type="radio" name="pki-encrypt-key-type" value="private">
-                                        Private key
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="pki-encrypt-algorithm">Select Encryption Algorithm</label>
-                                <select id="pki-encrypt-algorithm">
-                                    <option value="RSA">RSA (Provider Default - Not Recommended)</option>
-                                    <option value="RSA/ECB/PKCS1Padding">RSA/ECB/PKCS1Padding (Legacy)</option>
-                                    <option value="RSA/ECB/OAEPWithSHA-1AndMGF1Padding">RSA/ECB/OAEPWithSHA-1AndMGF1Padding (Legacy)</option>
-                                    <option value="RSA/ECB/OAEPWithSHA-256AndMGF1Padding" selected>RSA/ECB/OAEPWithSHA-256AndMGF1Padding (Recommended)</option>
-                                </select>
-                            </div>
-                            <button type="button" class="btn btn-primary" id="pki-encrypt-btn">Encrypt</button>
-                            <div class="form-group pki-output-field">
-                                <label for="pki-encrypt-output">Encrypted Output</label>
-                                <div class="textarea-with-action">
-                                    <textarea id="pki-encrypt-output" rows="7" readonly></textarea>
-                                    <button type="button" class="btn btn-secondary" id="pki-copy-encrypt-output">Copy</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="pki-crypto-panel">
-                            <h4>Decryption</h4>
-                            <div class="form-group">
-                                <label for="pki-decrypt-input">Enter Encrypted Text to Decrypt (Base64)</label>
-                                <textarea id="pki-decrypt-input" rows="6" placeholder="Base64 encrypted text"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="pki-decrypt-key">Enter Public/Private key</label>
-                                <textarea id="pki-decrypt-key" rows="7" placeholder="Paste PEM key"></textarea>
-                                <input type="file" id="pki-decrypt-key-file" accept=".pem,.key,.txt">
-                            </div>
-                            <div class="form-group">
-                                <label>RSA Key Type</label>
-                                <div class="radio-row">
-                                    <label>
-                                        <input type="radio" name="pki-decrypt-key-type" value="public">
-                                        Public key
-                                    </label>
-                                    <label>
-                                        <input type="radio" name="pki-decrypt-key-type" value="private" checked>
-                                        Private key
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="pki-decrypt-algorithm">Select Decryption Algorithm</label>
-                                <select id="pki-decrypt-algorithm">
-                                    <option value="RSA">RSA (Provider Default - Not Recommended)</option>
-                                    <option value="RSA/ECB/PKCS1Padding">RSA/ECB/PKCS1Padding (Legacy)</option>
-                                    <option value="RSA/ECB/OAEPWithSHA-1AndMGF1Padding">RSA/ECB/OAEPWithSHA-1AndMGF1Padding (Legacy)</option>
-                                    <option value="RSA/ECB/OAEPWithSHA-256AndMGF1Padding" selected>RSA/ECB/OAEPWithSHA-256AndMGF1Padding (Recommended)</option>
-                                </select>
-                            </div>
-                            <button type="button" class="btn btn-primary" id="pki-decrypt-btn">Decrypt</button>
-                            <div class="form-group pki-output-field">
-                                <label for="pki-decrypt-output">Decrypted Output</label>
-                                <div class="textarea-with-action">
-                                    <textarea id="pki-decrypt-output" rows="7" readonly></textarea>
-                                    <button type="button" class="btn btn-secondary" id="pki-copy-decrypt-output">Copy</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- CLI Commands Section -->
             <section id="cli-section" class="tab-content hidden">
                 <h2>OpenSSL CLI Commands</h2>
                 <p class="cli-intro">Complete reference for generating SSL certificates using OpenSSL command-line
