@@ -378,6 +378,8 @@ const UI = (function() {
             toggleBtn.addEventListener('click', () => {
                 const isHidden = caFormContainer.classList.contains('hidden');
                 caFormContainer.classList.toggle('hidden');
+                // Toggle active class
+                toggleBtn.classList.toggle('active');
                 // Update icon and text
                 const icon = toggleBtn.querySelector('.toggle-icon');
                 const text = toggleBtn.querySelector('.toggle-text');
@@ -471,22 +473,6 @@ const UI = (function() {
      */
     function setupEmailForm() {
         const form = document.getElementById('email-form');
-        const emailInput = document.getElementById('email-recipient');
-        const emailWarning = document.getElementById('email-warning');
-        const emailContent = document.getElementById('email-content');
-
-        // Show/hide email form based on email input
-        const checkEmail = () => {
-            if (emailInput.value.trim()) {
-                emailWarning.classList.add('hidden');
-                emailContent.classList.remove('hidden');
-            } else {
-                emailWarning.classList.remove('hidden');
-                emailContent.classList.add('hidden');
-            }
-        };
-
-        emailInput.addEventListener('input', checkEmail);
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1514,6 +1500,7 @@ openssl req -new -x509 -key ca.key -sha256 -days ${validity * 365} -out ca.crt \
                             caContainer.style.display = 'block';
                         }
                         if (toggleBtn) {
+                            toggleBtn.classList.add('active');
                             const icon = toggleBtn.querySelector('.toggle-icon');
                             const text = toggleBtn.querySelector('.toggle-text');
                             if (icon) icon.textContent = '▼';
@@ -1739,6 +1726,9 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
             case 'copy-pki-openssl':
                 text = document.getElementById('pki-openssl').textContent;
                 break;
+            case 'copy-pki-base64-openssl':
+                text = document.getElementById('pki-base64-openssl').textContent;
+                break;
             case 'copy-ssl-openssl':
                 text = document.getElementById('ssl-openssl-commands').textContent;
                 break;
@@ -1792,11 +1782,18 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
 
             // Check if EmailJS is configured
             if (typeof emailjs !== 'undefined') {
-                await emailjs.send('default_service', 'template_ssl_bundle', {
+                // EmailJS template parameters
+                const templateParams = {
                     to_email: recipient,
-                    attachment: base64Zip,
-                    filename: `${domain}-bundle.zip`
-                });
+                    from_email: 'no-reply@sagarmalla.info.np',
+                    domain: domain,
+                    ca_name: generatedCA ? generatedCA.commonName : 'N/A',
+                    cert_cn: domain,
+                    validity: document.getElementById('cert-validity')?.value || 'N/A',
+                    message: `SSL Certificate Bundle for ${domain}\n\nThis email contains your generated SSL certificate files.\n\nFiles included:\n- CA Certificate (ca.crt)\n- Server Certificate (${domain}.crt)\n- Private Key (${domain}.key)\n- CSR (${domain}.csr)\n\nDownload the attached ZIP file to get all certificates.`
+                };
+
+                await emailjs.send('service_9aahz9t', 'template_xvq4hvp', templateParams);
                 showSuccess('Email sent successfully!');
             } else {
                 showError('EmailJS not configured. Please set up EmailJS in the HTML file.');
@@ -1999,11 +1996,19 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
         toggleBtn.addEventListener('click', () => {
             const isHidden = section.classList.contains('hidden');
             section.classList.toggle('hidden');
-            toggleBtn.textContent = isHidden ? 'Hide RSA Text Encrypt/Decrypt' : 'Show RSA Text Encrypt/Decrypt';
-
+            // Toggle active class
+            toggleBtn.classList.toggle('active');
+            // Update icon and text
+            const icon = toggleBtn.querySelector('.toggle-icon');
+            const text = toggleBtn.querySelector('.toggle-text');
             if (isHidden) {
+                if (icon) icon.textContent = '▼';
+                if (text) text.textContent = 'Hide RSA Text Encrypt/Decrypt';
                 prefillLatestRSAKeys(false);
                 section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                if (icon) icon.textContent = '▶';
+                if (text) text.textContent = 'Show RSA Text Encrypt/Decrypt';
             }
         });
 
@@ -2028,7 +2033,9 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
     }
 
     /**
-     * Convert PKCS8 PEM key to base64 format (same as: sed '/-----/d' key.pem | tr -d '\n' | base64 -w 0)
+     * Convert PEM key to double-encoded base64 format (encode)
+     * Step 1: Remove PEM headers/footers → get raw base64 content
+     * Step 2: Encode that raw content to Base64 → double-encoded result
      */
     function pkcs8ToBase64(pemKey) {
         try {
@@ -2036,16 +2043,22 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
                 console.error('Invalid PEM key input:', pemKey);
                 return '';
             }
-            // Check if already base64 (no PEM headers)
-            if (!pemKey.includes('-----BEGIN')) {
-                return pemKey.replace(/\s/g, '');
-            }
-            // Remove PEM headers, dividers, and all whitespace/newlines
-            const result = pemKey
-                .replace(/-----BEGIN[^-]+-----/g, '')
-                .replace(/-----END[^-]+-----/g, '')
-                .replace(/[\n\r\t\s]/g, '');
-            return result;
+
+            let result = pemKey;
+
+            // Step 1: Remove all lines containing ----- (headers and footers)
+            const lines = result.split('\n');
+            const base64Lines = lines.filter(line => !line.includes('-----'));
+            result = base64Lines.join('');
+
+            // Remove any remaining whitespace characters
+            result = result.replace(/\s/g, '');
+
+            // Step 2: Encode the raw base64 string to base64 (double encoding)
+            // This matches: sed '/-----/d' key.pem | tr -d '\n' | base64 -w 0
+            const doubleEncoded = window.btoa(result);
+
+            return doubleEncoded;
         } catch (error) {
             console.error('Error converting to base64:', error);
             return '';
@@ -2053,25 +2066,42 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
     }
 
     /**
-     * Convert base64 string back to PKCS8 PEM format
-     * Uses -----BEGIN PRIVATE KEY----- header (PKCS8 format)
+     * Convert double-encoded base64 back to PEM format (decode)
+     * Step 1: Decode from base64 → get raw base64 content
+     * Step 2: Format as PEM with headers
      */
     function base64ToPemKey(base64Str, isPrivate = true) {
         try {
             if (!base64Str || typeof base64Str !== 'string') {
                 return 'Error: Invalid base64 input';
             }
-            // Remove all whitespace
-            const clean = base64Str.replace(/[\s\n\r]/g, '');
+
+            // Step 1: Remove all whitespace and decode from base64
+            let clean = base64Str.replace(/[\s\n\r]/g, '');
+
             // Validate base64 characters
             if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean)) {
                 return 'Error: Invalid base64 characters';
             }
-            // Format with line breaks (64 chars per line)
-            const formatted = clean.match(/.{1,64}/g)?.join('\n') || clean;
-            // Use PKCS8 format (-----BEGIN PRIVATE KEY-----)
+
+            // Decode from base64 to get the raw base64 content
+            let rawBase64;
+            try {
+                rawBase64 = window.atob(clean);
+            } catch (e) {
+                return 'Error: Invalid base64 encoding - cannot decode';
+            }
+
+            // Step 2: Format the raw base64 content as PEM with 64-char lines
+            const pemLines = [];
+            for (let i = 0; i < rawBase64.length; i += 64) {
+                pemLines.push(rawBase64.substring(i, i + 64));
+            }
+            const formatted = pemLines.join('\n');
+
+            // Use RSA PRIVATE KEY format for private keys
             if (isPrivate) {
-                return `-----BEGIN PRIVATE KEY-----\n${formatted}\n-----END PRIVATE KEY-----`;
+                return `-----BEGIN RSA PRIVATE KEY-----\n${formatted}\n-----END RSA PRIVATE KEY-----`;
             }
             return `-----BEGIN PUBLIC KEY-----\n${formatted}\n-----END PUBLIC KEY-----`;
         } catch (error) {
@@ -2100,35 +2130,43 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
         toggleBtn.addEventListener('click', () => {
             const isHidden = section.classList.contains('hidden');
             section.classList.toggle('hidden');
-            toggleBtn.textContent = isHidden ? 'Hide Base64 Tools' : 'Show Base64 Tools';
-
+            // Toggle active class
+            toggleBtn.classList.toggle('active');
+            // Update icon and text
+            const icon = toggleBtn.querySelector('.toggle-icon');
+            const text = toggleBtn.querySelector('.toggle-text');
             if (isHidden) {
+                if (icon) icon.textContent = '▼';
+                if (text) text.textContent = 'Hide Base64 Tools';
                 currentMode = 'encode';
                 document.querySelector('input[name="pki-base64-mode"][value="encode"]').checked = true;
                 updateBase64UI('encode');
                 input.value = '';
                 output.value = '';
                 section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                if (icon) icon.textContent = '▶';
+                if (text) text.textContent = 'Show Base64 Tools';
             }
         });
 
         function updateBase64UI(mode) {
             if (mode === 'encode') {
-                input.placeholder = '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----';
-                inputLabel.textContent = 'Enter PKCS8 Key (PEM)';
-                outputLabel.textContent = 'Base64 Output';
+                input.placeholder = '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYw...\n-----END PRIVATE KEY-----';
+                inputLabel.textContent = 'Enter Private Key (PKCS8 or RSA format)';
+                outputLabel.textContent = 'Base64 Output (raw key content)';
                 output.placeholder = 'Base64 encoded key will appear here...';
-                opensslPreview.textContent = `# Convert/Encode the PKCS8 private key into a base64 format
-# Example with private key file:
-sed '/-----/d' private_key_pkcs8.pem | tr -d '\\n' | base64 -w 0 > enc_key_pair_private_base64`;
+                opensslPreview.textContent = `# Encode: PEM to Base64
+# Removes all headers, footers and line breaks from PEM format
+# Output: raw base64 string without any formatting`;
             } else {
-                input.placeholder = 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD...';
+                input.placeholder = 'MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDB+gVF4...';
                 inputLabel.textContent = 'Enter Base64 String';
-                outputLabel.textContent = 'PKCS8 Key (PEM) Output';
-                output.placeholder = 'Decoded PKCS8 key will appear here...';
-                opensslPreview.textContent = `# Decode/Convert base64 to PKCS8 private key format
-# Example with base64 file:
-cat encoded_base64_key | base64 -d > private_key_pkcs8.pem`;
+                outputLabel.textContent = 'RSA Private Key (PEM) Output';
+                output.placeholder = 'Decoded RSA private key will appear here...';
+                opensslPreview.textContent = `# Decode: Base64 to PEM
+# Adds RSA PRIVATE KEY headers and formats with 64-char lines
+# Output: standard RSA PRIVATE KEY PEM format`;
             }
         }
 

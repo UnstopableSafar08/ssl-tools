@@ -10,6 +10,8 @@ to-do.sh
 .vscode/
 .idea/
 
+emailjs-template.html
+
 # Generated certificate/key artifacts
 *.key
 *.crt
