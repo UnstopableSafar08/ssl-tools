@@ -2154,19 +2154,33 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
             if (mode === 'encode') {
                 input.placeholder = '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYw...\n-----END PRIVATE KEY-----';
                 inputLabel.textContent = 'Enter Private Key (PKCS8 or RSA format)';
-                outputLabel.textContent = 'Base64 Output (raw key content)';
-                output.placeholder = 'Base64 encoded key will appear here...';
-                opensslPreview.textContent = `# Encode: PEM to Base64
-# Removes all headers, footers and line breaks from PEM format
-# Output: raw base64 string without any formatting`;
+                outputLabel.textContent = 'Double-Encoded Base64 Output';
+                output.placeholder = 'Double-encoded base64 will appear here...';
+                opensslPreview.textContent = `# Encode Flow: PEM Key → Double-Encoded Base64
+# Step 1: Remove PEM headers/footers and newlines
+# Step 2: Base64 encode the raw content (double encode)
+#
+# Equivalent OpenSSL Commands:
+# Step 1 - Extract raw base64 from PEM:
+sed '/-----/d' private_key.pem | tr -d '\\n'
+#
+# Step 2 - Double-encode to base64:
+sed '/-----/d' private_key.pem | tr -d '\\n' | base64 -w 0`;
             } else {
-                input.placeholder = 'MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDB+gVF4...';
-                inputLabel.textContent = 'Enter Base64 String';
-                outputLabel.textContent = 'RSA Private Key (PEM) Output';
-                output.placeholder = 'Decoded RSA private key will appear here...';
-                opensslPreview.textContent = `# Decode: Base64 to PEM
-# Adds RSA PRIVATE KEY headers and formats with 64-char lines
-# Output: standard RSA PRIVATE KEY PEM format`;
+                input.placeholder = 'TUlJRXZnSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2d3...';
+                inputLabel.textContent = 'Enter Double-Encoded Base64 String';
+                outputLabel.textContent = 'PEM Private Key Output';
+                output.placeholder = 'Decoded PEM key will appear here...';
+                opensslPreview.textContent = `# Decode Flow: Double-Encoded Base64 → PEM Key
+# Step 1: Base64 decode to get raw base64 content
+# Step 2: Add PEM headers and format with 64-char lines
+#
+# Equivalent OpenSSL Commands:
+# Step 1 - Decode from base64:
+echo "TUlJRXZnSUJBREFO..." | base64 -d
+#
+# Step 2 - Add PEM formatting (manual):
+echo "MIIEvAIBADAN..." | base64 -d > private_key.pem`;
             }
         }
 
@@ -2439,18 +2453,19 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
                 <td>
                     <div class="pki-action-stack">
                         <div class="pki-action-row">
-                            <span>Public</span>
+                            <span>Public:</span>
                             <button class="btn btn-secondary btn-sm" data-action="open-pki-pem-pub" data-index="${index}" title="Open Public PEM">PEM</button>
                             <button class="btn btn-secondary btn-sm" data-action="open-pki-pkcs8-pub" data-index="${index}" title="Open Public PKCS8">PKCS8</button>
                         </div>
                         <div class="pki-action-row">
-                            <span>Private</span>
+                            <span>Private:</span>
                             <button class="btn btn-secondary btn-sm" data-action="open-pki-pem-key" data-index="${index}" title="Open Private PEM">PEM</button>
                             <button class="btn btn-secondary btn-sm" data-action="open-pki-pkcs8-key" data-index="${index}" title="Open Private PKCS8">PKCS8</button>
-                            <button class="btn btn-secondary btn-sm" data-action="open-pki-base64-key" data-index="${index}" title="Open Private Base64">BASE64</button>
+                            <button class="btn btn-secondary btn-sm" data-action="open-pki-raw-b64-key" data-index="${index}" title="Open Raw PKCS8 Base64">Raw BASE64</button>
+                            <button class="btn btn-secondary btn-sm" data-action="open-pki-base64-key" data-index="${index}" title="Open Double-Encoded Base64">BASE64</button>
                         </div>
                         <div class="pki-action-row">
-                            <span>PKCS12</span>
+                            <span>Extras:</span>
                             ${keyPair.formats.pkcs12
                                 ? `<button class="btn btn-secondary btn-sm" data-action="open-pki-pkcs12" data-index="${index}" title="Open PKCS12 Bundle">P12</button>`
                                 : '<button class="btn btn-secondary btn-sm" disabled>N/A</button>'}
@@ -2495,7 +2510,26 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
             case 'open-pki-pkcs8-key':
                 showPKIArtifactModal('Private Key (PKCS8)', keyPair.formats.pkcs8.key, `${keyPair.name}_private_pkcs8.pem`);
                 break;
-            // Base64 format artifacts
+            // Raw PKCS8 Base64 (without double encoding)
+            case 'open-pki-raw-b64-key':
+                // Get raw base64 from pkcs8 format (removes headers but doesn't double-encode)
+                let rawB64Key = '';
+                if (keyPair.formats?.pkcs8?.key) {
+                    rawB64Key = keyPair.formats.pkcs8.key
+                        .split('\n')
+                        .filter(line => !line.includes('-----'))
+                        .join('')
+                        .replace(/\s/g, '');
+                } else if (keyPair.pemKey) {
+                    rawB64Key = keyPair.pemKey
+                        .split('\n')
+                        .filter(line => !line.includes('-----'))
+                        .join('')
+                        .replace(/\s/g, '');
+                }
+                showPKIArtifactModal('Private Key (Raw PKCS8 Base64)', rawB64Key, `${keyPair.name}_private_raw_b64.txt`);
+                break;
+            // Base64 format artifacts (double-encoded)
             case 'open-pki-base64-key':
                 // Try to get base64 from formats, fallback to generating from pkcs8 or pem
                 let base64Key = keyPair.formats?.base64?.key || '';
@@ -2683,14 +2717,20 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
             const readmeLines = [
                 'PKI Key Pairs Bundle',
                 '',
-                'Generated by SSL Certificate Generator.',
+                'Generated by sagarmalla.info.np.',
                 '',
                 'Files included per key pair:',
                 '- *_public.pem: Public key in PEM format',
                 '- *_private.pem: Private key in PEM format',
-                '- *_public_pkcs8.pem: Public key export used by this tool for PKCS8 table actions',
+                '- *_public_pkcs8.pem: Public key in PKCS8 PEM format',
                 '- *_private_pkcs8.pem: Private key in PKCS8 PEM format',
-                '- *.p12: PKCS12 bundle when available',
+                '- *_private_raw_b64.txt: Private key raw base64 (headers removed)',
+                '- *_private_base64.txt: Private key double-encoded base64',
+                '- *.p12: PKCS12 bundle (when available)',
+                '',
+                'Base64 formats:',
+                '- Raw B64: Single base64 - just PEM headers removed',
+                '- Base64 (double): Double-encoded base64 - base64(base64 content)',
                 '',
                 'Security notes:',
                 '- Keep private keys and PKCS12 passwords secret.',
@@ -2711,6 +2751,18 @@ openssl req -new -key ${cn}.key -out ${cn}.csr \\
                 // PKCS8 format
                 zip.file(`${keyPair.name}_public_pkcs8.pem`, keyPair.formats.pkcs8.pub);
                 zip.file(`${keyPair.name}_private_pkcs8.pem`, keyPair.formats.pkcs8.key);
+
+                // Raw base64 (single encoding - just headers removed)
+                const rawB64 = (keyPair.formats.pkcs8.key || keyPair.pemKey || '')
+                    .split('\n')
+                    .filter(line => !line.includes('-----'))
+                    .join('')
+                    .replace(/\s/g, '');
+                zip.file(`${keyPair.name}_private_raw_b64.txt`, rawB64);
+
+                // Double-encoded base64
+                const doubleB64 = pkcs8ToBase64(keyPair.formats.pkcs8.key || keyPair.pemKey || '');
+                zip.file(`${keyPair.name}_private_base64.txt`, doubleB64);
 
                 // PKCS12 format (if available)
                 if (keyPair.formats.pkcs12) {

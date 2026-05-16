@@ -11,6 +11,7 @@ to-do.sh
 .idea/
 
 emailjs-template.html
+cli-commands.md
 
 # Generated certificate/key artifacts
 *.key

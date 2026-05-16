@@ -1326,14 +1326,15 @@ form {
 }
 
 .pki-action-stack {
-    display: grid;
-    gap: 0.45rem;
-    min-width: 260px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-width: 280px;
 }
 
 .pki-action-row {
-    display: grid;
-    grid-template-columns: 64px repeat(3, max-content);
+    display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.35rem;
 }
@@ -1343,13 +1344,14 @@ form {
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .pki-action-row .btn {
-    min-width: 54px;
-    padding: 0.35rem 0.55rem;
-    border-radius: 0.375rem;
-    font-size: 0.72rem;
+    min-width: 48px;
+    padding: 0.3rem 0.4rem;
+    border-radius: 0.3rem;
+    font-size: 0.65rem;
     line-height: 1.1;
     white-space: nowrap;
 }

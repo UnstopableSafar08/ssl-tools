@@ -59,10 +59,11 @@ Browsers do not expose remote TLS peer certificate details to client-side JavaSc
 
 ### RSA/PKI Key Pairs
 - Generate RSA or ECDSA key pairs
-- Export PEM and PKCS#8 formats
+- Export formats: PEM, PKCS#8, Raw Base64, Double-Encoded Base64
 - Export RSA PKCS#12 (`.p12`) bundles with a custom password, defaulting to `password123`
-- ZIP download includes generated artifacts, `README.txt`, and `password.txt`
+- ZIP download includes all formats plus `README.txt` and `password.txt`
 - Optional RSA text encryption/decryption utility using generated or pasted PEM keys
+- Base64 Tools for encoding/decoding PEM keys to/from Base64 format
 
 ### SSL Checker
 - Inspect a certificate by domain and port when using the local Node helper server
@@ -182,6 +183,8 @@ To enable email delivery:
 ```
 ssl-generator/
 ├── index.html                # Main HTML file
+├── README.md                 # This file
+├── cli-commands.md           # Comprehensive OpenSSL CLI reference
 ├── start.sh                  # Starts the local helper server
 ├── assets/
 │   ├── css/

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSL, RSA, PKI Generator - Client-Only</title>
+    <title>RSA, PKI and SSL Generator - Client-Only</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="icon" href="assets/img/favicon.ico">
 </head>
@@ -22,7 +22,7 @@
 
     <div class="container">
         <header>
-            <h1>SSL, RSA, PKI Generator</h1>
+            <h1>RSA, PKI and SSL Generator</h1>
             <p class="subtitle">Production-grade, client-side X.509 toolkit</p>
             <div class="security-notice">
                 <span class="icon">🔒</span>
@@ -187,8 +187,16 @@ MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYw...
                             <span>Equivalent OpenSSL Commands</span>
                             <button class="btn-copy" data-action="copy-pki-base64-openssl">Copy</button>
                         </div>
-                        <pre id="pki-base64-openssl"># Encode: Remove PEM headers and line breaks for raw base64
-# This extracts the raw base64 content from a PEM formatted key</pre>
+                        <pre id="pki-base64-openssl"># Encode Flow: PEM Key → Double-Encoded Base64
+# Step 1: Remove PEM headers/footers and newlines
+# Step 2: Base64 encode the raw content (double encode)
+#
+# Equivalent OpenSSL Commands:
+# Step 1 - Extract raw base64 from PEM:
+sed '/-----/d' private_key.pem | tr -d '\n'
+#
+# Step 2 - Double-encode to base64:
+sed '/-----/d' private_key.pem | tr -d '\n' | base64 -w 0</pre>
                     </div>
                 </div>
 
