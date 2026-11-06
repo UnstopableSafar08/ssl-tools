@@ -14,6 +14,8 @@ const UI = (function() {
     let currentKeyModalDownload = null;
     const LOCAL_STORAGE_TTL_MS = 3 * 60 * 1000;
     const LOCAL_STORAGE_CREATED_KEY = 'ssl-generator-local-storage-created-at';
+    const DEFAULT_SSL_DOMAIN = 'ssl.sagarmalla.info.np';
+    let sslCertificateDomain = '';
 
     /**
      * Initialize UI
@@ -871,7 +873,11 @@ const UI = (function() {
         if (!domainBtn || !fileBtn || !pemBtn || !fileInput || !domainInput || !portInput) return;
 
         domainBtn.addEventListener('click', handleSSLDomainCheck);
-        domainInput.addEventListener('input', updateSSLOpenSSLCommands);
+        domainInput.addEventListener('input', () => {
+            // Let a manually typed domain take precedence over the parsed certificate.
+            sslCertificateDomain = '';
+            updateSSLOpenSSLCommands();
+        });
         portInput.addEventListener('input', updateSSLOpenSSLCommands);
         fileBtn.addEventListener('click', async () => {
             if (fileInput.files.length === 0) {
@@ -905,7 +911,9 @@ const UI = (function() {
      * Update SSL checker OpenSSL command examples
      */
     function updateSSLOpenSSLCommands() {
-        const domain = document.getElementById('ssl-domain').value.trim() || 'sagarmalla.info.np';
+        const domain = sslCertificateDomain ||
+            document.getElementById('ssl-domain').value.trim() ||
+            DEFAULT_SSL_DOMAIN;
         const port = document.getElementById('ssl-port').value.trim() || '443';
         const commands = `# Fetch and print the remote certificate chain
 openssl s_client -connect ${domain}:${port} -servername ${domain} -showcerts </dev/null
@@ -925,6 +933,52 @@ openssl x509 -in certificate.pem -noout -text
 openssl x509 -in certificate.pem -noout -checkend 2592000`;
 
         document.getElementById('ssl-openssl-commands').textContent = commands;
+    }
+
+    /**
+     * Pick a connectable hostname from certificate names for OpenSSL examples
+     */
+    function pickConnectableDomain(commonName, alternativeNames = []) {
+        const normalize = value => String(value || '').trim().replace(/^DNS:/i, '');
+        const names = [normalize(commonName), ...alternativeNames.map(normalize)]
+            .filter(name => name && name !== '-');
+
+        const exactName = names.find(name => !name.includes('*') && validateDomain(name));
+        if (exactName) {
+            return exactName;
+        }
+
+        const wildcardName = names.find(name => name.startsWith('*.'));
+        if (wildcardName && validateDomain(wildcardName.substring(2))) {
+            return wildcardName.substring(2);
+        }
+
+        return '';
+    }
+
+    /**
+     * Get the connectable hostname from a forge certificate
+     */
+    function getCertificateConnectableDomain(cert) {
+        const subject = getCertificateAttributeMap(cert.subject.attributes);
+        const sanExtension = cert.getExtension('subjectAltName');
+        const dnsNames = sanExtension && sanExtension.altNames
+            ? sanExtension.altNames.filter(altName => altName.type === 2).map(altName => altName.value)
+            : [];
+
+        return pickConnectableDomain(subject.CN, dnsNames);
+    }
+
+    /**
+     * Get the connectable hostname from certificate details parsed by the helper server
+     */
+    function getParsedCertificateConnectableDomain(cert) {
+        const dnsNames = String(cert.subjectAlternativeNames || '')
+            .split(',')
+            .map(name => name.trim())
+            .filter(name => name && !/^(IP Address|URI|Email):/i.test(name));
+
+        return pickConnectableDomain(cert.commonName, dnsNames);
     }
 
     /**
@@ -1112,6 +1166,9 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
         setText('ssl-detail-serial', leaf.serialNumber);
         setText('ssl-detail-summary', `${leaf.commonName || 'Certificate'} issued by ${leaf.issuer || 'unknown issuer'}`);
 
+        sslCertificateDomain = getParsedCertificateConnectableDomain(leaf);
+        updateSSLOpenSSLCommands();
+
         renderParsedSSLChain(certs);
 
         const output = document.getElementById('ssl-checker-output');
@@ -1169,6 +1226,9 @@ openssl x509 -in certificate.pem -noout -checkend 2592000`;
         setText('ssl-detail-issuer', issuerText);
         setText('ssl-detail-serial', normalizeSerialNumber(leaf.serialNumber));
         setText('ssl-detail-summary', `${subject.CN || 'Certificate'} issued by ${issuerText || 'unknown issuer'}`);
+
+        sslCertificateDomain = getCertificateConnectableDomain(leaf);
+        updateSSLOpenSSLCommands();
 
         renderSSLChain(certs);
 
